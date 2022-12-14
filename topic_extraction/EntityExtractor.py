@@ -1,10 +1,13 @@
 import requests
 import dotenv
 import os
+import pandas as pd
+import json
 dotenv.load_dotenv()
 
 class EntityExtractor:
     '''
+    #TODO: Add parameter to limit the amount of extracted topics per question
     This class contains methods for extracting entities from a given text using Wikifier.
     Two methods are presented, the first one using the Wikifier API directly
     and the second one, uses the Wikifier demo capabilities.
@@ -29,6 +32,8 @@ class EntityExtractor:
         '''
         Extracts the entities from a given text, using a set of tunning parameters for
         performing a request to the Wikifier API.
+
+        To get a user key, go to https://wikifier.org/register.html
         '''
 
         user_key = os.environ.get('WIKIFIER_EXTRACTION_KEY')
@@ -149,4 +154,47 @@ class EntityExtractor:
         wikidata_classes = annotation['wikiDataClasses'][0:self.wiki_data_classes]
 
         return dbpedia_types, wikidata_classes
+
+    def generate_topic_dataset(self, question_dataset, topic_dataset_name, starts_at, finishes_at):
+        '''
+        Generates a topic dataset in a JSON file from a given question dataset.
+        The inverval for processing the questions can be set usinf starts_at and finishes_at.
+        '''
+        filtered_questions_dataset = question_dataset.iloc[starts_at:finishes_at]
+        
+        with open(topic_dataset_name, 'w') as outfile:
+
+            cont = starts_at + 1
+            topics = []
+            for index, question in filtered_questions_dataset.iterrows():
+                
+                try:
+                    title = question['title']
+                    description = question['description']
+                    text = title + '. ' + description
+
+                    annotations = self.get_annotations_from_submit(text)
+                    topics.append(annotations)
+
+                except Exception as e:
+                    print('Error:', str(e))
+                    topics.append([])
+
+                print("Processed questions: ",cont)
+                cont += 1
+
+            json.dump(topics, outfile)
+    
+    @staticmethod
+    def join_datasets(question_dataset, topic_dataset, column_index, outfile_name):
+        '''
+        Generates a JSON file with the the merged question dataset and the topic
+        '''
+        enriched_dataset = question_dataset.insert(loc=column_index, 
+                                                    column='topics', 
+                                                    value=topic_dataset)
+        
+        enriched_dataset.to_json(outfile_name)
+        return enriched_dataset
+
 
