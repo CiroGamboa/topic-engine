@@ -89,7 +89,7 @@ class EntityExtractor:
         return data.json()
 
 
-    def __get_extraction_token(self,text, language):
+    def __get_extraction_token(self,text):
         '''
         Performs the request to the wikifier demo server for obtaining a token,
         that is necessary for querying the output of the text processing.
@@ -97,7 +97,7 @@ class EntityExtractor:
         url = 'https://wikifier.org/submit.py'
 
         payload = {
-            'languages': language,
+            'languages': 'en',
             'secondaryAnnotLanguage': 'en',
             'text': text,
             'extraArgs': '',
@@ -141,7 +141,7 @@ class EntityExtractor:
                     annot['types'], annot['classes'] = self.__filter_types(annotation)
                     filtered_annotations.append(annot)
             except Exception as e:
-                print(str(e))
+                print("Topic extraction failed: " + str(e))
 
         return filtered_annotations
 
@@ -190,9 +190,8 @@ class EntityExtractor:
         '''
         Generates a JSON file with the the merged question dataset and the topic
         '''
-        enriched_dataset = question_dataset.insert(loc=column_index, 
-                                                    column='topics', 
-                                                    value=topic_dataset)
+        enriched_dataset = question_dataset.copy()
+        enriched_dataset.insert(loc=column_index, column='topics', value=topic_dataset)
         
         enriched_dataset.to_json(outfile_name)
         return enriched_dataset
