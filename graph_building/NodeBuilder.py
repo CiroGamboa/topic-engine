@@ -2,12 +2,22 @@
 
 class NodeBuilder:
     '''
+    #TODO: This class should be refactored as a proper ORM wrapper
+    with models for each kind of node and relationship
+
+    #TODO: Analize which fields should be added to each kind of node and relationship
+
+    #TODO: Add filters to discard some questions or predictions or users
+
+    #TODO: Make performance improvements. As this code was meant to be produced fast for the
+    #hackathon, there may be some methods that can be improved
+
+    This class is used for creating Neo4j nodes using Cypher queries.
+    There is a method for each type of node, extracting the required data
+    from the questions and predictions datasets.
     
     '''
-    def __init__(self, host, user, password, graph, binary_questions, binary_predictions, continuous_questions, continuous_predictions):
-        self.neo4j_host = host
-        self.neo4j_user = user
-        self.neo4j_password = password
+    def __init__(self, graph, binary_questions, binary_predictions, continuous_questions, continuous_predictions):
 
         self.graph = graph
         
@@ -18,7 +28,17 @@ class NodeBuilder:
 
     def create_question_nodes(self, question_type):
         '''
+        Creates the question nodes for binary and continuous questions
         
+        Node structure:
+
+        "Question":{
+            "question_id": str,
+            "title": str,
+            "resolution_comment": str,
+            "question_type": str
+        }
+
         '''
         cont_nodes = 0
         if(question_type == 'continuous'):
@@ -59,6 +79,15 @@ class NodeBuilder:
 
     def create_category_nodes(self):
         '''
+        Creates the category nodes for binary and continuous questions
+        This method ignores the Tournament category types.
+
+        Node structure:
+
+        "Category":{
+            "category_id": str,
+            "title": str
+        }
         '''
         binary_categories = self.binary_questions['categories'].tolist()
         continuous_categories = self.continuous_questions['categories'].tolist()
@@ -96,6 +125,14 @@ class NodeBuilder:
 
     def create_topic_nodes(self):
         '''
+        Creates the topic nodes for binary and continuous questions
+
+        Node structure:
+
+        "Topic":{
+            "topic_id": str,
+            "title": str
+        }
         '''
         binary_topics = self.binary_questions['topics'].tolist()
         continuous_topics = self.continuous_questions['topics'].tolist()
@@ -121,6 +158,14 @@ class NodeBuilder:
 
     def create_user_nodes(self):
         '''
+        Creates the user nodes
+
+        Node structure:
+
+        "User":{
+            "user_id": str,
+            "title": str
+        }
         '''
         user_con = self.continuous_predictions['user_id'].unique().tolist()
         user_bin = self.binary_predictions['user_id'].unique().tolist()
@@ -128,5 +173,12 @@ class NodeBuilder:
         users_set = set(user_con+user_bin)
         users_list = list(users_set)
 
+        cont_nodes = 0  
         for i in users_list:
-            self.graph.run("CREATE (n:User{user_id:"+str(i)+"})")
+            try:
+                self.graph.run("CREATE (n:User{user_id:"+str(i)+"})")
+                cont_nodes += 1
+            except Exception as e:
+                print("Could't create node:" + str(e))
+        
+        print("Created " + str(cont_nodes) + " nodes")
