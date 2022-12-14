@@ -1,8 +1,11 @@
-# Metaculus Topic Engine!
+# Metaculus Topic Engine
 
-Hi! I'm your first Markdown file in **StackEdit**. If you want to learn about StackEdit, you can read me. If you want to play with Markdown, you can edit me. Once you have finished with me, you can create new files by opening the **file explorer** on the left corner of the navigation bar.
+This project is produced in the framework of the Metaculus One Million Predictions Hackathon.
 
-And this will produce a flow chart:
+### Goal
+Determine if an NLP-driven Topic Engine that identifies the most important topics in Metaculus questions and creates a knowledge graph with their key relationships could be used to improve the science of forecasting.
+
+### Methodology
 ```mermaid
 graph LR
 A(Graph Modeling) --> B(Neo4j Setup)
@@ -11,9 +14,20 @@ B --> D(Dataset upload)
 C --> D
 D --> E(Queries and Analysis)
 ```
+First, the graph is model to represent the relationships between the important entities of the Metaculus dataset structure, then a Neo4j database is setup and the extraction of the topics is executed. Finally, the new dataset with the topics included is uploaded to Neo4j and then the queries can be applied to performed analysis.
 
-### Requirements
+### Use requirements
+For running the Python scripts and notebooks, it is suggested to use a [Python Virtual Environmet](https://docs.python.org/3/library/venv.html) and install the [requirements.txt](requirements.txt) file, by running:
+```
+pip install -r requirements.txt
+```
+For running a Neo4j database locally, it is necessary to user Docker and follow the instructions on the **Neo4j Setup** section.
 
+## Graph Modeling
+For the Metaculus dataset, the following graph is considered as the base for the helper classes and structure in Neo4j. 
+
+**![](https://lh6.googleusercontent.com/sABrhmWjNjAcGRgh2R2LYxVWYoVRx9KxUJoAZpXSCER413nO7XVaZCMyZxI-SP9iCaV2s4pQPM38768fbHcZRFCvi0q3YzLxqp2YK2NcdJ-D0cqiIhnF3SX4EyMLKq3Bmr8zgo4lWkohSGS0EGm1aK_fH12MRhK_TOiKGnHs7cZgKdMVyFU8GiNen2QxTEu2=s2048)**
+Both nodes and relationships can storage data, so the weight of the relationships and useful data can be expressed as relationship or node parameters. The node definition is more rigid, but more relationship types could be added in future releases, such as a direct relationship between User and Topic, for analyzing the User domain skills easily.
 
 ## Neo4j Setup
 The Graph Database used for the project is [Neo4j](https://neo4j.com/). There is  a public docker image that contains the community edition of Neo4j and can be used locally.
@@ -30,7 +44,6 @@ docker run \
 -v $HOME/neo4j/import:/var/lib/neo4j/import \
 -v $HOME/neo4j/plugins:/plugins \
 --env NEO4J_AUTH=neo4j/test \
-
 neo4j:latest
 ```
 The port 7474 is used for the web interface of the Neo4j browser, it can be accesed in *http://localhost.com:7474*. The  port 7687 is used for API calls. A default database is created and the root user is *neo4j*, with password *test* .
@@ -40,150 +53,69 @@ The extraction of the entities that are considered as topics is performed by tak
 
 The amount of detected topics vary depending on the [page rank](https://en.wikipedia.org/wiki/PageRank) applied for filtering the entities. Each entity contains a lot of references to Wikifier and DBpedia classes and depending on the parameter of the requests, the obtained data can be large, therefore it is recommeded to do batch requests. The capabilities of Wikifier can be tested in their [demo tool](https://wikifier.org).
 
-The example code alogside the description of the process can be found in this notebook.
+The example code alogside the description of the process can be found in this [jupyter notebook](topic_extraction/extract_topics.ipynb).
   
 ## Dataset upload
+For transforming the enriched dataset (questions and predictions dataset + topics) into a full graph within Neo4j, it is necessary to extract the data, turning it into nodes and relationships.
 
+The graph is built using helper classes, one for the node creation and one for the relationship between creation. As each type of node and relationship rely on extracting the proper data from the datasets, there is method for build each type of node and relationship.
 
-### Dataset adaptation
+The library **py2neo** is used to facilitate the graph building, using Cypher queries directly. With this setup, it is possible to easily connect a local Neo4j instance or a production Neo4j database, just by replacing the host, port, user and password.
 
-
-### Nodes creation
-
-
-### Relationship creations
-
+The example code alogside the description of the process can be found in this [jupyter notebook](graph_building/build_graph.ipynb).
 
 ## Queries and Analysis
+After uploading the dataset to Neo4j, it is possible to perform Cypher queries for analyzing the graph dynamics and structure. There are several analysis that can be perfomed with the given graph structure by using queries, such as getting analyzing the user expertise by checking his/her favorite topics, suggest subcategories by looking at the most popular topics, etc.
 
+These queries can be performed directly on the Neo4j browser or using **py2neo** as shown in this [jupyter notebook](graph_analysis/analyze_graph.ipynb).
 
-# Files
+### Get basic information from the Graph
+* Get all nodes and all relationships
+````
+MATCH (a) RETURN (a)
+````
 
-StackEdit stores your files in your browser, which means all your files are automatically saved locally and are accessible **offline!**
+* Get all the Topic nodes
+````
+MATCH (n:Topic) RETURN (n)
+````
 
-## Create files and folders
-
-The file explorer is accessible using the button in left corner of the navigation bar. You can create a new file by clicking the **New file** button in the file explorer. You can also create folders by clicking the **New folder** button.
-
-## Switch to another file
-
-All your files and folders are presented as a tree in the file explorer. You can switch from one to another by clicking a file in the tree.
-
-## Rename a file
-
-You can rename the current file by clicking the file name in the navigation bar or by clicking the **Rename** button in the file explorer.
-
-## Delete a file
-
-You can delete the current file by clicking the **Remove** button in the file explorer. The file will be moved into the **Trash** folder and automatically deleted after 7 days of inactivity.
-
-## Export a file
-
-You can export the current file by clicking **Export to disk** in the menu. You can choose to export the file as plain Markdown, as HTML using a Handlebars template or as a PDF.
-
-
-# Synchronization
-
-Synchronization is one of the biggest features of StackEdit. It enables you to synchronize any file in your workspace with other files stored in your **Google Drive**, your **Dropbox** and your **GitHub** accounts. This allows you to keep writing on other devices, collaborate with people you share the file with, integrate easily into your workflow... The synchronization mechanism takes place every minute in the background, downloading, merging, and uploading file modifications.
-
-There are two types of synchronization and they can complement each other:
-
-- The workspace synchronization will sync all your files, folders and settings automatically. This will allow you to fetch your workspace on any other device.
-	> To start syncing your workspace, just sign in with Google in the menu.
-
-- The file synchronization will keep one file of the workspace synced with one or multiple files in **Google Drive**, **Dropbox** or **GitHub**.
-	> Before starting to sync files, you must link an account in the **Synchronize** sub-menu.
-
-## Open a file
-
-You can open a file from **Google Drive**, **Dropbox** or **GitHub** by opening the **Synchronize** sub-menu and clicking **Open from**. Once opened in the workspace, any modification in the file will be automatically synced.
-
-## Save a file
-
-You can save any file of the workspace to **Google Drive**, **Dropbox** or **GitHub** by opening the **Synchronize** sub-menu and clicking **Save on**. Even if a file in the workspace is already synced, you can save it to another location. StackEdit can sync one file with multiple locations and accounts.
-
-## Synchronize a file
-
-Once your file is linked to a synchronized location, StackEdit will periodically synchronize it by downloading/uploading any modification. A merge will be performed if necessary and conflicts will be resolved.
-
-If you just have modified your file and you want to force syncing, click the **Synchronize now** button in the navigation bar.
-
-> **Note:** The **Synchronize now** button is disabled if you have no file to synchronize.
-
-## Manage file synchronization
-
-Since one file can be synced with multiple locations, you can list and manage synchronized locations by clicking **File synchronization** in the **Synchronize** sub-menu. This allows you to list and remove synchronized locations that are linked to your file.
-
-
-# Publication
-
-Publishing in StackEdit makes it simple for you to publish online your files. Once you're happy with a file, you can publish it to different hosting platforms like **Blogger**, **Dropbox**, **Gist**, **GitHub**, **Google Drive**, **WordPress** and **Zendesk**. With [Handlebars templates](http://handlebarsjs.com/), you have full control over what you export.
-
-> Before starting to publish, you must link an account in the **Publish** sub-menu.
-
-## Publish a File
-
-You can publish your file by opening the **Publish** sub-menu and by clicking **Publish to**. For some locations, you can choose between the following formats:
-
-- Markdown: publish the Markdown text on a website that can interpret it (**GitHub** for instance),
-- HTML: publish the file converted to HTML via a Handlebars template (on a blog for example).
-
-## Update a publication
-
-After publishing, StackEdit keeps your file linked to that publication which makes it easy for you to re-publish it. Once you have modified your file and you want to update your publication, click on the **Publish now** button in the navigation bar.
-
-> **Note:** The **Publish now** button is disabled if your file has not been published yet.
-
-## Manage file publication
-
-Since one file can be published to multiple locations, you can list and manage publish locations by clicking **File publication** in the **Publish** sub-menu. This allows you to list and remove publication locations that are linked to your file.
-
-
-# Markdown extensions
-
-StackEdit extends the standard Markdown syntax by adding extra **Markdown extensions**, providing you with some nice features.
-
-> **ProTip:** You can disable any **Markdown extension** in the **File properties** dialog.
-
-
-## SmartyPants
-
-SmartyPants converts ASCII punctuation characters into "smart" typographic punctuation HTML entities. For example:
-
-|                |ASCII                          |HTML                         |
-|----------------|-------------------------------|-----------------------------|
-|Single backticks|`'Isn't this fun?'`            |'Isn't this fun?'            |
-|Quotes          |`"Isn't this fun?"`            |"Isn't this fun?"            |
-|Dashes          |`-- is en-dash, --- is em-dash`|-- is en-dash, --- is em-dash|
-
-
-## KaTeX
-
-You can render LaTeX mathematical expressions using [KaTeX](https://khan.github.io/KaTeX/):
-
-The *Gamma function* satisfying $\Gamma(n) = (n-1)!\quad\forall n\in\mathbb N$ is via the Euler integral
-
-$$
-\Gamma(z) = \int_0^\infty t^{z-1}e^{-t}dt\,.
-$$
-
-> You can find more information about **LaTeX** mathematical expressions [here](http://meta.math.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference).
-
-
-## UML diagrams
-
-You can render UML diagrams using [Mermaid](https://mermaidjs.github.io/). For example, this will produce a sequence diagram:
-
-```mermaid
-sequenceDiagram
-Alice ->> Bob: Hello Bob, how are you?
-Bob-->>John: How about you John?
-Bob--x Alice: I am good thanks!
-Bob-x John: I am good thanks!
-Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
-
-Bob-->Alice: Checking with John...
-Alice->John: Yes... John, how are you?
+* Count the amount of User nodes
+```
+MATCH (n:User) RETURN count(n) AS count
 ```
 
+* Get all the HAS relationships (Question-Topic)
+````
+MATCH ()-[r:HAS]->() RETURN (n)
+````
 
+* Count the amount of CONTAINS relationships (Category-Topic)
+```
+MATCH ()-[r:CONTAINS]->()
+RETURN count(r) as count
+```
+
+### Perform complex queries
+* Get all the predictions made by a given user
+```
+MATCH (u:User)-[p:PREDICTS]-() RETURN DISTINCT(u)
+```
+* Get the 10 most popular topics (topics with most relationships)
+```
+MATCH (a:Topic)-[r]-()
+RETURN a, COUNT(r) as num
+ORDER BY num DESC LIMIT 10
+```
+* Get the top 5 favorite topics of a given user
+```
+MATCH (u:User)-[p:PREDICTS]-(q:Question)-[h:HAS]-(t:Topic) 
+WHERE u.user_id=124344 RETURN u,p,q,h,t, 
+COUNT((t)) as num ORDER BY num DESC LIMIT 5
+```
+* Get the top 5 favorite categories of a given user
+```
+MATCH (u:User)-[p:PREDICTS]-(q:Question)-[b:BELONGSTO]-(c:Category) 
+WHERE u.user_id=124344 RETURN u,p,q,b,c, 
+COUNT(c) as num ORDER BY num DESC LIMIT 5
+```
